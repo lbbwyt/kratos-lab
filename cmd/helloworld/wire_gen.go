@@ -14,22 +14,24 @@ import (
 	"helloworld/internal/data"
 	"helloworld/internal/server"
 	"helloworld/internal/service"
+	"helloworld/pkg/registry"
 )
 
 // Injectors from wire.go:
 
 // wireApp init kratos application.
-func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*kratos.App, func(), error) {
+func wireApp(confServer *conf.Server, confData *conf.Data, registry_Nacos *conf.Registry_Nacos, logger log.Logger) (*kratos.App, func(), error) {
 	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	greeterRepo := data.NewGreeterRepo(dataData, logger)
-	greeterUsecase := biz.NewGreeterUsecase(greeterRepo, logger)
+	iGreeterRepo := data.NewGreeterRepo(dataData, logger)
+	greeterUsecase := biz.NewGreeterUsecase(iGreeterRepo, logger)
 	greeterService := service.NewGreeterService(greeterUsecase)
 	grpcServer := server.NewGRPCServer(confServer, greeterService, logger)
 	httpServer := server.NewHTTPServer(confServer, greeterService, logger)
-	app := newApp(logger, grpcServer, httpServer)
+	nacosRegistry := registry.NewNacosRegistry(registry_Nacos)
+	app := newApp(logger, grpcServer, httpServer, nacosRegistry)
 	return app, func() {
 		cleanup()
 	}, nil
