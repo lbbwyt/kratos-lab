@@ -70,9 +70,9 @@ func main() {
 		op = file.NewSource(flagconf)
 	} else {
 		//从配置中心加载配置
-		log.Infof("bootstrap config : %v", bootstrap.GConfig)
+		log.Infof("nacos bootstrap config : %v", bootstrap.GConfig)
 
-		wireConfigSource(bootstrap.GConfig.Nacos.Ip, bootstrap.GConfig.Nacos.Port, bootstrap.WithGroup("prod"), bootstrap.WithDataID("config.yaml"))
+		op = wireConfigSource(bootstrap.GConfig.Nacos.Ip, bootstrap.GConfig.Nacos.Port, bootstrap.WithGroup("prod"), bootstrap.WithDataID("config.yaml"))
 	}
 
 	c := config.New(
@@ -90,7 +90,7 @@ func main() {
 	if err := c.Scan(&bc); err != nil {
 		panic(err)
 	}
-
+	log.Infof("app bootstrap config : %v", bc)
 	app, cleanup, err := wireApp(bc.Server, bc.Data, bc.Registry.GetNacos(), logger)
 	if err != nil {
 		panic(err)
