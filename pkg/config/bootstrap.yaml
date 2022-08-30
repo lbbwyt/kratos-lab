@@ -1,0 +1,4 @@
+nacos:
+  ip: 172.19.202.30
+  port: 8848
+  debug: true

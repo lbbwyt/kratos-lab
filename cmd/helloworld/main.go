@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/go-kratos/kratos/contrib/registry/nacos/v2"
-	"os"
-
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
@@ -13,6 +11,8 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
 	"helloworld/internal/conf"
+	bootstrap "helloworld/pkg/config"
+	"os"
 )
 
 // go build -ldflags "-X main.Version=x.y.z"
@@ -20,15 +20,19 @@ var (
 	// Name is the name of the compiled software.
 	Name = "helloworld"
 	// Version is the version of the compiled software.
-	Version string
+	Version = "v0.0.1"
 	// flagconf is the config flag.
 	flagconf string
+
+	//bootstrap config
+	bootstrapConf string
 
 	id, _ = os.Hostname()
 )
 
 func init() {
 	flag.StringVar(&flagconf, "conf", "../../configs", "config path, eg: -conf config.yaml")
+	flag.StringVar(&bootstrapConf, "bootstrap", "../../pkg/config/bootstrap.yaml", "config path, eg: -bootstrap bootstrap.yaml")
 }
 
 func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, registry *nacos.Registry) *kratos.App {
@@ -57,9 +61,23 @@ func main() {
 		"trace.id", tracing.TraceID(),
 		"span.id", tracing.SpanID(),
 	)
+	//读取bootstrap 配置
+	bootstrap.Boot(bootstrapConf)
+
+	var op config.Source
+	if bootstrap.GConfig.Nacos.Debug {
+		//测试环境读取本地配置
+		op = file.NewSource(flagconf)
+	} else {
+		//从配置中心加载配置
+		log.Infof("bootstrap config : %v", bootstrap.GConfig)
+
+		wireConfigSource(bootstrap.GConfig.Nacos.Ip, bootstrap.GConfig.Nacos.Port, bootstrap.WithGroup("prod"), bootstrap.WithDataID("config.yaml"))
+	}
+
 	c := config.New(
 		config.WithSource(
-			file.NewSource(flagconf),
+			op,
 		),
 	)
 	defer c.Close()

@@ -8,12 +8,14 @@ package main
 
 import (
 	"github.com/go-kratos/kratos/v2"
+	config2 "github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/log"
 	"helloworld/internal/biz"
 	"helloworld/internal/conf"
 	"helloworld/internal/data"
 	"helloworld/internal/server"
 	"helloworld/internal/service"
+	"helloworld/pkg/config"
 	"helloworld/pkg/registry"
 )
 
@@ -35,4 +37,10 @@ func wireApp(confServer *conf.Server, confData *conf.Data, registry_Nacos *conf.
 	return app, func() {
 		cleanup()
 	}, nil
+}
+
+func wireConfigSource(ip string, port uint64, opts ...config.Option) config2.Source {
+	iConfigClient := config.NewNacosConfigClient(ip, port)
+	source := config.NewConfigSource(iConfigClient, opts...)
+	return source
 }
